@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   View,
   Alert,
@@ -18,24 +18,39 @@ import { fetchRandomQuote } from '../services/quoteApi';
 export default function RollScreen({ route }) {
   const { sides } = route.params;
   const { addRoll } = useContext(HistoryContext);
-  const [quote, setQuote] = useState('');
   const [spin, setSpin] = useState(false);
   const [modifier, setModifier] = useState('0');
 
-  useEffect(() => {
-    fetchRandomQuote().then(setQuote);
-  }, []);
-
-  const rollDice = () => {
+  const rollDice = async () => {
     setSpin(true);
     const base = Math.floor(Math.random() * sides) + 1;
     const mod = parseInt(modifier, 10) || 0;
     const result = base + mod;
 
-    addRoll({ sides, base, modifier: mod, result, date: new Date().toISOString() });
+    // salva no histórico
+    addRoll({
+      sides,
+      base,
+      modifier: mod,
+      result,
+      date: new Date().toISOString(),
+    });
 
+    // busca a citação na hora do roll
+    let quoteText;
+    try {
+      quoteText = await fetchRandomQuote();
+    } catch (err) {
+      console.warn('Erro ao buscar citação:', err);
+      quoteText = 'Sem citação disponível no momento.';
+    }
+
+    // espera a animação do dado e exibe o Alert
     setTimeout(() => {
-      Alert.alert(`Result`, `${base} + ${mod} = ${result}\n\n"${quote}"`);
+      Alert.alert(
+        'Result',
+        `${base} + ${mod} = ${result}\n\n"${quoteText}"`
+      );
       setSpin(false);
     }, 600);
   };
